@@ -29,12 +29,23 @@ def load_audio(audiofile: Path, format: str):
     return audio_array, audiofile, frame_rate
 
 
-def main(audiofile: Path, format: str, output: Path):
+def select_animation(
+    animation_type: str, audio_array: np.ndarray, sample_rate: float
+) -> None:
+    if animation_type == "bar":
+        BarFFTAnim(audio_array, sample_rate)
+    elif animation_type == "simple":
+        SimpleFFTAnim(audio_array, sample_rate)
+
+
+def main(audiofile: Path, format: str, output: Path, animation_type: str):
     # Delete temporary directory if it already exists
     if config.TMPDIR.exists():
         shutil.rmtree(config.TMPDIR)
     audio_array, audiofile, sample_rate = load_audio(audiofile=audiofile, format=format)
-    BarFFTAnim(audio_array, sample_rate)
+    select_animation(
+        animation_type=animation_type, audio_array=audio_array, sample_rate=sample_rate
+    )
     # Load video clip
     video = VideoFileClip(str(config.TMP_ANIMATION))
     # Load audio clip
@@ -63,10 +74,22 @@ if __name__ == "__main__":
         "--format", help="Audio file format (default: .wav).", type=str, default=".wav"
     )
     parser.add_argument(
+        "--type",
+        help="Type of animation (default: simple).",
+        type=str,
+        default="simple",
+    )
+    parser.add_argument(
         "--output",
+        "-o",
         help="Output path (default: ./final.mp4).",
         type=Path,
         default=Path("./final.mp4"),
     )
     args = parser.parse_args()
-    main(audiofile=args.audiofile, format=args.format, output=args.output)
+    main(
+        audiofile=args.audiofile,
+        format=args.format,
+        output=args.output,
+        animation_type=args.type,
+    )
