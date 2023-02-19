@@ -17,8 +17,8 @@ def convert_to_temporary_wav(audiofile: Path):
     return audiofile
 
 
-def load_audio(audiofile: Path, format: str):
-    if format != ".wav":
+def load_audio(audiofile: Path, audio_format: str):
+    if audio_format != "wav":
         audiofile = convert_to_temporary_wav(audiofile)
     audio = pydub.AudioSegment.from_wav(audiofile)
     # Normalization
@@ -38,11 +38,14 @@ def select_animation(
         SimpleFFTAnim(audio_array, sample_rate)
 
 
-def main(audiofile: Path, format: str, output: Path, animation_type: str):
+def main(audiofile: Path, output: Path, animation_type: str):
     # Delete temporary directory if it already exists
     if config.TMPDIR.exists():
         shutil.rmtree(config.TMPDIR)
-    audio_array, audiofile, sample_rate = load_audio(audiofile=audiofile, format=format)
+    audio_format = audiofile.name.split(".")[1]
+    audio_array, audiofile, sample_rate = load_audio(
+        audiofile=audiofile, audio_format=audio_format
+    )
     select_animation(
         animation_type=animation_type, audio_array=audio_array, sample_rate=sample_rate
     )
@@ -69,9 +72,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("Entry point of the audio animation package.")
     parser.add_argument(
         "audiofile", help="Audio file to create the animation.", type=Path
-    )
-    parser.add_argument(
-        "--format", help="Audio file format (default: .wav).", type=str, default=".wav"
     )
     parser.add_argument(
         "--type",
