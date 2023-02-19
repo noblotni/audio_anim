@@ -5,7 +5,7 @@ import numpy as np
 import pydub
 from moviepy.editor import AudioFileClip, VideoFileClip
 import audio_anim.config as config
-from audio_anim.fft_anim import AudioArrayAnim
+from audio_anim.fft_anim import SimpleFFTAnim, BarFFTAnim
 
 
 def convert_to_temporary_wav(audiofile: Path):
@@ -34,7 +34,7 @@ def main(audiofile: Path, format: str, output: Path):
     if config.TMPDIR.exists():
         shutil.rmtree(config.TMPDIR)
     audio_array, audiofile, sample_rate = load_audio(audiofile=audiofile, format=format)
-    AudioArrayAnim(audio_array, sample_rate)
+    BarFFTAnim(audio_array, sample_rate)
     # Load video clip
     video = VideoFileClip(str(config.TMP_ANIMATION))
     # Load audio clip
@@ -55,7 +55,7 @@ def main(audiofile: Path, format: str, output: Path):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("Entry point of the ftt animation module.")
+    parser = argparse.ArgumentParser("Entry point of the audio animation package.")
     parser.add_argument(
         "audiofile", help="Audio file to create the animation.", type=Path
     )
