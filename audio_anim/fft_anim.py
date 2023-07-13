@@ -1,17 +1,16 @@
 """Create an animation from an audio signal."""
 import abc
 import numpy as np
+import logging
 import matplotlib.pyplot as plt
 import matplotlib.animation as anim
 import audio_anim.config as config
+
 
 # Constants
 T_WINDOW = 0.3
 N_FFT = 3000
 MAX_Y = 1000
-FPS = 20
-# Time between two frames (ms)
-INTERVAL = int(1000 / FPS)
 # Number of bins for the bar style
 N_BINS = 100
 
@@ -20,32 +19,44 @@ plt.style.use("dark_background")
 
 
 class AudioArrayAnim(abc.ABC):
-    def animate_video(self, audio_array: np.ndarray, sample_rate: float) -> None:
+    def __init__(self, audio_array: np.ndarray, sample_rate: float, fps):
         self.audio_array = audio_array
         self.sample_rate = sample_rate
-        self.speed = int(self.sample_rate / FPS)
+        self.fps = fps
+        self.speed = int(self.sample_rate / self.fps)
+        self.interval = int(1000 / self.fps)
+
+    def animate_video(
+        self,
+    ) -> None:
         self.figure, self.ax = plt.subplots()
-        self.ani = anim.FuncAnimation(
+        ani = anim.FuncAnimation(
             fig=self.figure,
             func=self.animate_audio,
             init_func=self.init_animation,
-            interval=INTERVAL,
+            interval=self.interval,
             frames=self.audio_array.size // self.speed,
         )
         if not config.TMPDIR.exists():
             config.TMPDIR.mkdir(mode=666, parents=True, exist_ok=True)
-        self.ani.save(str(config.TMP_ANIMATION), fps=FPS)
+        logging.debug("Saving animation to: %s", str(config.TMP_ANIMATION))
+        writer_video = anim.FFMpegWriter(
+            fps=self.fps, extra_args=["-vcodec", "libx264"]
+        )
+        try:
+            ani.save(str(config.TMP_ANIMATION), writer=writer_video)
+        except ValueError:
+            pass
 
-    def show_animation(self, audio_array: np.ndarray, sample_rate: float) -> None:
-        self.audio_array = audio_array
-        self.sample_rate = sample_rate
-        self.speed = int(self.sample_rate / FPS)
+    def show_animation(
+        self,
+    ) -> None:
         self.figure, self.ax = plt.subplots()
-        self.ani = anim.FuncAnimation(
+        _ = anim.FuncAnimation(
             fig=self.figure,
             func=self.animate_audio,
             init_func=self.init_animation,
-            interval=INTERVAL,
+            interval=self.interval,
             frames=self.audio_array.size // self.speed,
         )
         plt.show()
@@ -60,8 +71,8 @@ class AudioArrayAnim(abc.ABC):
 
 
 class SimpleFFTAnim(AudioArrayAnim):
-    def __init__(self, audio_array: np.ndarray, sample_rate: float) -> None:
-        super().animate_video(audio_array=audio_array, sample_rate=sample_rate)
+    def __init__(self, audio_array: np.ndarray, sample_rate: float, fps: int) -> None:
+        super().__init__(audio_array=audio_array, sample_rate=sample_rate, fps=fps)
 
     def init_animation(self):
         (self.fft_pos,) = self.ax.plot([], [], color="blue")
@@ -86,8 +97,8 @@ class SimpleFFTAnim(AudioArrayAnim):
 
 
 class BarFFTAnim(AudioArrayAnim):
-    def __init__(self, audio_array: np.ndarray, sample_rate: float) -> None:
-        super().animate_video(audio_array=audio_array, sample_rate=sample_rate)
+    def __init__(self, audio_array: np.ndarray, sample_rate: float, fps: int) -> None:
+        super().__init__(audio_array=audio_array, sample_rate=sample_rate, fps=fps)
 
     def init_animation(self):
         _, _, self.bar_container = self.ax.hist(

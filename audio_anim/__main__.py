@@ -1,11 +1,14 @@
 import argparse
+import logging
 from pathlib import Path
 import shutil
 import numpy as np
 import pydub
-from moviepy.editor import AudioFileClip, VideoFileClip
 import audio_anim.config as config
-from audio_anim.fft_anim import SimpleFFTAnim, BarFFTAnim
+from audio_anim.fft_anim import AudioArrayAnim, SimpleFFTAnim, BarFFTAnim
+from audio_anim.video import make_final_video
+
+logging.basicConfig(level=logging.INFO)
 
 
 def convert_to_temporary_wav(audiofile: Path):
@@ -30,40 +33,40 @@ def load_audio(audiofile: Path, audio_format: str):
 
 
 def select_animation(
-    animation_type: str, audio_array: np.ndarray, sample_rate: float
-) -> None:
+    animation_type: str, audio_array: np.ndarray, sample_rate: float, fps: int
+) -> AudioArrayAnim:
     if animation_type == "bar":
-        BarFFTAnim(audio_array, sample_rate)
+        return BarFFTAnim(audio_array, sample_rate, fps=fps)
     elif animation_type == "simple":
-        SimpleFFTAnim(audio_array, sample_rate)
+        return SimpleFFTAnim(audio_array, sample_rate, fps=fps)
+    else:
+        raise ValueError("Invalid animation type.")
 
 
-def main(audiofile: Path, output: Path, animation_type: str):
+def main(audiofile: Path, output: Path, animation_type: str, fps: int):
     # Delete temporary directory if it already exists
     if config.TMPDIR.exists():
         shutil.rmtree(config.TMPDIR)
     audio_format = audiofile.name.split(".")[1]
-    audio_array, audiofile, sample_rate = load_audio(
+    audio_array, audiofile, audio_sample_rate = load_audio(
         audiofile=audiofile, audio_format=audio_format
     )
-    select_animation(
-        animation_type=animation_type, audio_array=audio_array, sample_rate=sample_rate
+    logging.debug(f"Audio file loaded. Its shape is : {audio_array.shape}")
+    anim = select_animation(
+        animation_type=animation_type,
+        audio_array=audio_array,
+        sample_rate=audio_sample_rate,
+        fps=fps,
     )
-    # Load video clip
-    video = VideoFileClip(str(config.TMP_ANIMATION))
-    # Load audio clip
-    audio = AudioFileClip(str(audiofile))
-    # Clip audio
-    music_time = int(audio_array.size / sample_rate)
-    audio = audio.subclip(0, music_time)
-    # Add music to video
-    final_clip = video.set_audio(audio)
-    # Save final clip
-    final_clip.write_videofile(str(output))
-    # Close files
-    audio.close()
-    video.close()
-    final_clip.close()
+    # Make animation video
+    anim.animate_video()
+    # Make final video with sound
+    make_final_video(
+        audiofile=str(audiofile),
+        videofile=str(config.TMP_ANIMATION),
+        audio_sample_rate=audio_sample_rate,
+        output=str((output)),
+    )
     # Delete temporary files
     shutil.rmtree(config.TMPDIR)
 
@@ -71,7 +74,10 @@ def main(audiofile: Path, output: Path, animation_type: str):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Entry point of the audio animation package.")
     parser.add_argument(
-        "audiofile", help="Audio file to create the animation.", type=Path
+        "--audiofile",
+        help="Audio file to create the animation.",
+        type=Path,
+        required=True,
     )
     parser.add_argument(
         "--type",
@@ -86,10 +92,13 @@ if __name__ == "__main__":
         type=Path,
         default=Path("./final.mp4"),
     )
+    parser.add_argument(
+        "--fps", help="Number of frame per second. (default: 20)", type=int, default=20
+    )
     args = parser.parse_args()
     main(
         audiofile=args.audiofile,
-        format=args.format,
         output=args.output,
         animation_type=args.type,
+        fps=args.fps,
     )
