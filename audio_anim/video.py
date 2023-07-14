@@ -1,17 +1,18 @@
 """Make video."""
+from pathlib import Path
 from moviepy.editor import AudioFileClip, VideoFileClip
 
 
 def make_final_video(
-    audiofile: str,
-    videofile: str,
+    audiofile: Path,
+    videofile: Path,
     audio_sample_rate: float,
-    output: str,
+    output: Path,
 ):
     # Load video clip
-    video = VideoFileClip(videofile)
+    video = VideoFileClip(videofile.as_posix())
     # Load audio clip
-    audio = AudioFileClip(audiofile, fps=int(audio_sample_rate))
+    audio = AudioFileClip(audiofile.as_posix(), fps=int(audio_sample_rate))
     # Check duration of audio and video
     audio_duration = audio.duration
     video_duration = video.duration
@@ -27,7 +28,7 @@ def make_final_video(
     final_clip = video.set_audio(audio)
 
     # Save final clip
-    final_clip.write_videofile(str(output))
+    final_clip.write_videofile(output.as_posix())
 
     # Close the files
     audio.close()
