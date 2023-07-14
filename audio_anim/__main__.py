@@ -5,7 +5,7 @@ import numpy as np
 import pydub
 from moviepy.editor import AudioFileClip, VideoFileClip
 import audio_anim.config as config
-from audio_anim.fft_anim import AudioArrayAnim
+from audio_anim.fft_anim import SimpleFFTAnim, BarFFTAnim
 
 
 def convert_to_temporary_wav(audiofile: Path):
@@ -17,8 +17,8 @@ def convert_to_temporary_wav(audiofile: Path):
     return audiofile
 
 
-def load_audio(audiofile: Path, format: str):
-    if format != ".wav":
+def load_audio(audiofile: Path, audio_format: str):
+    if audio_format != "wav":
         audiofile = convert_to_temporary_wav(audiofile)
     audio = pydub.AudioSegment.from_wav(audiofile)
     # Normalization
@@ -29,12 +29,26 @@ def load_audio(audiofile: Path, format: str):
     return audio_array, audiofile, frame_rate
 
 
-def main(audiofile: Path, format: str, output: Path):
+def select_animation(
+    animation_type: str, audio_array: np.ndarray, sample_rate: float
+) -> None:
+    if animation_type == "bar":
+        BarFFTAnim(audio_array, sample_rate)
+    elif animation_type == "simple":
+        SimpleFFTAnim(audio_array, sample_rate)
+
+
+def main(audiofile: Path, output: Path, animation_type: str):
     # Delete temporary directory if it already exists
     if config.TMPDIR.exists():
         shutil.rmtree(config.TMPDIR)
-    audio_array, audiofile, sample_rate = load_audio(audiofile=audiofile, format=format)
-    AudioArrayAnim(audio_array, sample_rate)
+    audio_format = audiofile.name.split(".")[1]
+    audio_array, audiofile, sample_rate = load_audio(
+        audiofile=audiofile, audio_format=audio_format
+    )
+    select_animation(
+        animation_type=animation_type, audio_array=audio_array, sample_rate=sample_rate
+    )
     # Load video clip
     video = VideoFileClip(str(config.TMP_ANIMATION))
     # Load audio clip
@@ -55,18 +69,27 @@ def main(audiofile: Path, format: str, output: Path):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("Entry point of the ftt animation module.")
+    parser = argparse.ArgumentParser("Entry point of the audio animation package.")
     parser.add_argument(
         "audiofile", help="Audio file to create the animation.", type=Path
     )
     parser.add_argument(
-        "--format", help="Audio file format (default: .wav).", type=str, default=".wav"
+        "--type",
+        help="Type of animation (default: simple).",
+        type=str,
+        default="simple",
     )
     parser.add_argument(
         "--output",
+        "-o",
         help="Output path (default: ./final.mp4).",
         type=Path,
         default=Path("./final.mp4"),
     )
     args = parser.parse_args()
-    main(audiofile=args.audiofile, format=args.format, output=args.output)
+    main(
+        audiofile=args.audiofile,
+        format=args.format,
+        output=args.output,
+        animation_type=args.type,
+    )
