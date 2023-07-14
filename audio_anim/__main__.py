@@ -62,10 +62,10 @@ def main(audiofile: Path, output: Path, animation_type: str, fps: int):
     anim.animate_video()
     # Make final video with sound
     make_final_video(
-        audiofile=str(audiofile),
-        videofile=str(config.TMP_ANIMATION),
+        audiofile=audiofile,
+        videofile=config.TMP_ANIMATION,
         audio_sample_rate=audio_sample_rate,
-        output=str((output)),
+        output=output,
     )
     # Delete temporary files
     shutil.rmtree(config.TMPDIR)
