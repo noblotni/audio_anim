@@ -1,14 +1,22 @@
-import argparse
+"""Convert an audiofile into a video."""
+from enum import Enum
 import logging
 from pathlib import Path
 import shutil
 import numpy as np
 import pydub
+import typer
+from typing_extensions import Annotated
 import audio_anim.config as config
 from audio_anim.fft_anim import AudioArrayAnim, SimpleFFTAnim, BarFFTAnim
 from audio_anim.video import make_final_video
 
 logging.basicConfig(level=logging.INFO)
+
+
+class AnimationType(str, Enum):
+    SIMPLE = "simple"
+    BAR = "bar"
 
 
 def convert_to_temporary_wav(audiofile: Path):
@@ -43,7 +51,17 @@ def select_animation(
         raise ValueError("Invalid animation type.")
 
 
-def main(audiofile: Path, output: Path, animation_type: str, fps: int):
+def main(
+    audiofile: Annotated[Path, typer.Argument(help="Path to the audio file")],
+    output: Annotated[Path, typer.Option(help="Path to the output file")] = Path(
+        "./final.mp4"
+    ),
+    animation_type: Annotated[
+        AnimationType, typer.Option(help="Type of animation", case_sensitive=False)
+    ] = AnimationType.SIMPLE,
+    fps: Annotated[int, typer.Option(help="Frames per second")] = 20,
+):
+    """Convert an audio file into a video animation."""
     # Delete temporary directory if it already exists
     if config.TMPDIR.exists():
         shutil.rmtree(config.TMPDIR)
@@ -72,33 +90,5 @@ def main(audiofile: Path, output: Path, animation_type: str, fps: int):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("Entry point of the audio animation package.")
-    parser.add_argument(
-        "--audiofile",
-        help="Audio file to create the animation.",
-        type=Path,
-        required=True,
-    )
-    parser.add_argument(
-        "--type",
-        help="Type of animation (default: simple).",
-        type=str,
-        default="simple",
-    )
-    parser.add_argument(
-        "--output",
-        "-o",
-        help="Output path (default: ./final.mp4).",
-        type=Path,
-        default=Path("./final.mp4"),
-    )
-    parser.add_argument(
-        "--fps", help="Number of frame per second. (default: 20)", type=int, default=20
-    )
-    args = parser.parse_args()
-    main(
-        audiofile=args.audiofile,
-        output=args.output,
-        animation_type=args.type,
-        fps=args.fps,
-    )
+    typer.run(main)
+    
