@@ -12,6 +12,10 @@ python = "^3.9"
 pydub = "^0.25.1"
 moviepy = "^1.0.3"
 decorator = "^4.4.2"
+typer = "^0.9.0"
+
+[tool.poetry.scripts]
+audio-anim = "audio_anim.__main__:cli"
 
 
 [build-system]
