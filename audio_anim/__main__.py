@@ -89,6 +89,9 @@ def main(
     shutil.rmtree(config.TMPDIR)
 
 
-if __name__ == "__main__":
+def cli():
     typer.run(main)
-    
+
+
+if __name__ == "__main__":
+    cli()
