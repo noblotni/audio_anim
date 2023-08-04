@@ -6,12 +6,11 @@ import shutil
 import numpy as np
 import pydub
 import typer
+import structlog
 from typing_extensions import Annotated
 import audio_anim.config as config
 from audio_anim.fft_anim import AudioArrayAnim, SimpleFFTAnim, BarFFTAnim
 from audio_anim.video import make_final_video
-
-logging.basicConfig(level=logging.INFO)
 
 
 class AnimationType(str, Enum):
@@ -60,8 +59,21 @@ def main(
         AnimationType, typer.Option(help="Type of animation", case_sensitive=False)
     ] = AnimationType.SIMPLE,
     fps: Annotated[int, typer.Option(help="Frames per second")] = 20,
+    verbose: Annotated[int, typer.Option(help="Verbosity")] = 0,
 ):
     """Convert an audio file into a video animation."""
+
+    # Handle log level
+    if verbose >= 2:
+        log_level = logging.DEBUG
+    elif verbose == 1:
+        log_level = logging.INFO
+    else:
+        log_level = logging.WARNING
+    structlog.configure(
+        wrapper_class=structlog.make_filtering_bound_logger(log_level),
+    )
+    log = structlog.get_logger()
     # Delete temporary directory if it already exists
     if config.TMPDIR.exists():
         shutil.rmtree(config.TMPDIR)
@@ -69,16 +81,18 @@ def main(
     audio_array, audiofile, audio_sample_rate = load_audio(
         audiofile=audiofile, audio_format=audio_format
     )
-    logging.debug(f"Audio file loaded. Its shape is : {audio_array.shape}")
+    log.debug("Audio file loaded. Its shape is: ", shape=audio_array.shape)
     anim = select_animation(
         animation_type=animation_type,
         audio_array=audio_array,
         sample_rate=audio_sample_rate,
         fps=fps,
     )
+    log.info("Making animation")
     # Make animation video
     anim.animate_video()
     # Make final video with sound
+    log.info("Making video")
     make_final_video(
         audiofile=audiofile,
         videofile=config.TMP_ANIMATION,
