@@ -59,7 +59,9 @@ def main(
         AnimationType, typer.Option(help="Type of animation", case_sensitive=False)
     ] = AnimationType.SIMPLE,
     fps: Annotated[int, typer.Option(help="Frames per second")] = 20,
-    verbose: Annotated[int, typer.Option(help="Verbosity")] = 0,
+    verbose: Annotated[
+        int, typer.Option("--verbose", "-v", help="Verbosity", count=True)
+    ] = 0,
 ):
     """Convert an audio file into a video animation."""
 
