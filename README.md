@@ -2,7 +2,7 @@
 
 A package to animate audio files.
 
-![](./docs/imgs/fft_color_example.png)
+![](./docs/imgs/fft_color_example.svg)
 
 # Installation 
 
@@ -21,10 +21,27 @@ A package to animate audio files.
     pip install .
     ```
 
+You will also need `fmpeg`. On Linux install it with : 
+```shell
+sudo apt install ffmpeg
+```
+# Usage
+
+Once installed, you can run the `audio-anim` command :
+```shell
+ Usage: audio-anim [OPTIONS] AUDIOFILE                                                                           
+                                                                                                                 
+ Convert an audio file into a video animation.
+ *    audiofile      PATH  Path to the audio file [default: None] [required]
+ --output                  PATH          Path to the output file [default: final.mp4]
+ --animation-type          [simple|bar]  Type of animation [default: AnimationType.SIMPLE]
+ --fps                     INTEGER       Frames per second [default: 20]
+ --verbose         -v      INTEGER       Verbosity [default: 0] 
+ --help                                  Show this message and exit.       
+```
+
 # TODO
 
-- Add tests of the features
-- Make a great CLI tool with typer
 - Add a config file to set fft colors
 - Improve the resolution of the output video
 - Improve fft bar style
