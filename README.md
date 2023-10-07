@@ -2,7 +2,7 @@
 
 A package to animate audio files.
 
-![](./docs/imgs/fft_color_example.svg)
+![](./docs/imgs/fft_color_example.png)
 
 # Installation 
 
